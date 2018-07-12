@@ -58,7 +58,7 @@ int main(int argc, char *argv[]){
 		/* parametros(descritor socket, numeros de conexões em espera sem serem aceitas pelo accept)*/
 		conectarComCliente(descritor_socket, endereco);
 		printf("Fechando conexão.\n");
-		sleep(2);
+		//sleep(1);
 	}
 	close(descritor_socket);
 	
@@ -79,6 +79,10 @@ void conectarComCliente(int socket_original, struct sockaddr_in endereco){
 	int tamanho = sizeof(struct sockaddr_in);
    	/* Aceita um pedido de conexao, devolve um novo "socket" ja ligado ao emissor do pedido e o "socket" original*/
 	int novo_socket = accept(socket_original, (struct sockaddr *)&endereco_cliente, &tamanho);
+
+	if(novo_socket<0){
+		printf("Menor que zero\n");
+	}
 
 	aatp_msg solicitacao = { 0 };
 	size_t tam_solicitacao = sizeof(solicitacao);
