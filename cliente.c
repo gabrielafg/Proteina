@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
-#define NUM_CLIENTE 2
+#define NUM_CLIENTE 1
 #define TAM_PROTEINA 609
 #define NUM_IPS 1
 #define REFERENCIA 1
@@ -28,8 +28,7 @@ int indice_thread[NUM_CLIENTE];
 
 bool fim;
 char proteina[TAM_PROTEINA + 1];
-char nova_proteina[TAM_PROTEINA];
-char proteina_auxiliar[TAM_PROTEINA + 1];
+char nova_proteina[TAM_PROTEINA + 1];
 char proteina_info[75];
 char ip[NUM_IPS][15];
 int progresso;
@@ -54,6 +53,7 @@ int main(){
 	
 	lerProteina(REFERENCIA);
 	criarNovaProteina();
+	lerProteina(NOVA);
 	lerIPs();
 	
 	pthread_mutex_init(&mutex, NULL);
@@ -84,21 +84,22 @@ void lerProteina(int tipo){
 		if(tipo == NOVA){
 			FILE *arquivo;
 			arquivo = fopen("nova_proteina.txt", "r");
-			fgets(proteina_auxiliar, sizeof(proteina_auxiliar), arquivo);
+			fgets(nova_proteina, sizeof(nova_proteina), arquivo);
 			fclose(arquivo);
-		}	
+		}
 }
 
 void criarNovaProteina(){
 	FILE *arq;
-	arq = fopen("nova_proteina.txt", "wb");
+	arq = fopen("nova_proteina.txt", "wr");
 	if(arq){
 		printf("Arquvio criado: nova_proteina.txt");
-		memset(&nova_proteina, '_', sizeof(nova_proteina));
-		fputs(nova_proteina, arq);
+		char preenchimento[TAM_PROTEINA];
+		memset(&preenchimento, '_', sizeof(preenchimento));
+		fputs(preenchimento, arq);
 		fclose(arq);
 	}else{
-		printf("Erro ao criar arquivo.\n");
+		printf("Erro ao criar arquivo nova_proteina.txt.\n");
 		exit(1);
 	}
 }
@@ -106,10 +107,15 @@ void criarNovaProteina(){
 void lerIPs(){
 	FILE *arquivo;
 	arquivo = fopen("IPs.txt", "r");
-	for(int i = 0; i < NUM_IPS; i++){
-		fgets(ip[i], sizeof(ip[i]), arquivo);
+	if(arquivo){
+		for(int i = 0; i < NUM_IPS; i++){
+			fgets(ip[i], sizeof(ip[i]), arquivo);
+		}
+		fclose(arquivo);
+	}else{
+		printf("O arquivo de IPs não foi encontrado. \n\n");
+		exit(1);
 	}
-	fclose(arquivo);
 }
 
 // ---------------- Funções do cliente
@@ -146,13 +152,13 @@ int estabelecerConexao(){
 	socket_remoto = socket(AF_INET, SOCK_STREAM, 0);
 	
 	if (socket_remoto < 0) {
-		perror("Criando stream socket");
+		perror("Erro ao criar stream socket");
 		exit(1);
 	}
 	printf("> Conectando no servidor '%s:%d'\n", rem_hostname, porta_remota);
 	
 	if (connect(socket_remoto, (struct sockaddr *) &endereco_remoto, sizeof(endereco_remoto)) < 0) {
-		perror("Conectando stream socket");
+		perror("Erro ao conectar stream socket");
 		//exit(1);
 	}
 	return socket_remoto;
@@ -181,21 +187,23 @@ aatp_msg criarSolicitacao(){
 
 void verificarPacote(int id){
 	if(toupper(pacote_recebido[id].method) == 'R'){
+		FILE *arquivo;
+		arquivo = fopen("nova_proteina.txt", "r+");
+		fgets(nova_proteina, sizeof(nova_proteina), arquivo);
 		int quantidade = pacote_recebido[id].size;
-		char sequencia[quantidade];
-		char aa[quantidade];
 		int aa_aceito = 0;
-	
-		lerProteina(NOVA);
-	
+		char sequencia[quantidade];
+				
 		for(int i = 0; i < quantidade; i++){
 			sequencia[i] = toupper(pacote_recebido[id].payload[i]);
-		}
-		for(int i = 0; i < TAM_PROTEINA && aa_aceito < quantidade; i++){
+		}		
+		
+		for(int i = 0; (i < TAM_PROTEINA) && (aa_aceito < quantidade); i++){
 			for(int j = 0; j < quantidade; j++){
-				if((proteina[i] == sequencia[j]) && (proteina_auxiliar[i] == '_')){
-					proteina_auxiliar[i] = sequencia[j];
-					sequencia[j] = '*';
+				if((proteina[i] == sequencia[j]) && (nova_proteina[i] == '_')){
+					fseek(arquivo, i, SEEK_SET);
+					putc(sequencia[j], arquivo);
+					nova_proteina[i] = sequencia[j];
 					aa_aceito++;
 					progresso++;
 					if(progresso == TAM_PROTEINA)
@@ -203,30 +211,22 @@ void verificarPacote(int id){
 				}
 			}
 		}
-		if(aa_aceito > 0){
-			armazenarAminoacido();
-		}
+		fclose(arquivo);
 	}
-}
-
-void armazenarAminoacido(){
-	char temp[TAM_PROTEINA + 1];
-	FILE *arquivo;
-	arquivo = fopen("nova_proteina.txt", "wr");
-	fseek(arquivo, 0, SEEK_CUR);
-	fprintf(arquivo, "%s", proteina_auxiliar);
-	fseek(arquivo, 0, SEEK_CUR);
-	fclose(arquivo);
 }
 
 // ---------------- Funções do gerenciador 
 void *executarGerenciador(){
 	while(!fim){
 		system("clear");
-		printf("Progresso: %d/%d \n", progresso, TAM_PROTEINA);
 		printf("%s \n", proteina_info);
-		printf("Sequência: %s \n", proteina_auxiliar);
+		printf("Sequência: %s \n", nova_proteina);
+		printf("Progresso: %d/%d \n\n", progresso, TAM_PROTEINA);
 		sleep(1);
 	}
+	system("clear");
+	printf("%s \n", proteina_info);
+	printf("Sequência: %s \n", nova_proteina);
+	printf("Progresso: %d/%d \n\n", progresso, TAM_PROTEINA);
 	printf("A SEQUÊNCIA ESTÁ COMPLETA!!!! \n\n");
 }
