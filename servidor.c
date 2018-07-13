@@ -34,7 +34,6 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 	
-   	/* Cria o socket para enviar e receber datagramas - parametros(familia, tipo, protocolo) */
 	descritor_socket = socket(AF_INET, SOCK_STREAM, 0);	
 	
 	if (descritor_socket < 0) {
@@ -42,12 +41,11 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-	endereco.sin_family = AF_INET; //familia do protocolo
-	endereco.sin_addr.s_addr = INADDR_ANY; //endereco IP local
-	endereco.sin_port = htons(atoi(argv[1])); //porta local
+	endereco.sin_family = AF_INET;
+	endereco.sin_addr.s_addr = INADDR_ANY;
+	endereco.sin_port = htons(atoi(argv[1]));
 	bzero(&(endereco.sin_zero), 8);
-
-   	/* Bind para o endereco local*/
+	
 	if (bind(descritor_socket, (struct sockaddr *) &endereco, sizeof(struct sockaddr)) < 0) {
 		perror("Ligando stream socket");
 		exit(1);
@@ -56,8 +54,7 @@ int main(int argc, char *argv[]){
 	while(!fim){
 		listen(descritor_socket, 5);
 		conectarComCliente(descritor_socket, endereco);
-		printf(">>> Fechando conexão.\n");
-		//sleep(1);
+		printf(">>> Fechando conexão.\n\n");
 	}
 	close(descritor_socket);
 	
@@ -76,7 +73,6 @@ void conectarComCliente(int socket_original, struct sockaddr_in endereco){
 	
 	struct sockaddr_in endereco_cliente;
 	int tamanho = sizeof(struct sockaddr_in);
-   	/* Aceita um pedido de conexao, devolve um novo "socket" ja ligado ao emissor do pedido e o "socket" original*/
 	int novo_socket = accept(socket_original, (struct sockaddr *)&endereco_cliente, &tamanho);
 
 	aatp_msg solicitacao = { 0 };
@@ -89,7 +85,7 @@ void conectarComCliente(int socket_original, struct sockaddr_in endereco){
 	resposta = criarResposta(solicitacao.size);
 	
 	send(novo_socket, &resposta, sizeof(resposta), 0);
-	printf("Servidor - Enviei: tam - %d; %c; %s\n", resposta.size, resposta.method, resposta.payload);
+	printf("Servidor - Enviei: tam - %d; %c; %s\n\n", resposta.size, resposta.method, resposta.payload);
 	
 	close(novo_socket);
 }
@@ -100,8 +96,8 @@ aatp_msg criarResposta(uint8_t quantidade){
 	resposta.size = quantidade;
 	memset(&resposta.payload, 0, sizeof resposta.payload);
 	for(int i = 0; i<quantidade; i++){
-		int num = rand()%20;
-		resposta.payload[i] = aminoacido[num];
+		int aa = rand()%20;
+		resposta.payload[i] = aminoacido[aa];
 	}
 	return resposta;
 }

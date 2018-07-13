@@ -9,7 +9,8 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
-#define NUM_CLIENTE 1
+#define PORTA 1419
+#define NUM_CLIENTE 2
 #define TAM_PROTEINA 609
 #define NUM_IPS 1
 #define REFERENCIA 1
@@ -32,6 +33,8 @@ char nova_proteina[TAM_PROTEINA + 1];
 char proteina_info[75];
 char ip[NUM_IPS][15];
 int progresso;
+int pacotes;
+int aminoacidos;
 aatp_msg pacote_recebido[NUM_CLIENTE];
 
 void *thread_result;
@@ -50,6 +53,8 @@ void *executarGerenciador();
 int main(){
 	fim = false;
 	progresso = 0;
+	pacotes = 0;
+	aminoacidos = 0;
 	
 	lerProteina(REFERENCIA);
 	criarNovaProteina();
@@ -139,15 +144,15 @@ void *executarCliente(void *indice){
 }
 
 int estabelecerConexao(){
-	char *rem_hostname;
+	char *servidor;
 	int porta_remota, socket_remoto;
 	struct sockaddr_in endereco_remoto; /* Estrutura: familia + endereco IP + porta */
 	
-	rem_hostname = ip[rand()%NUM_IPS];
-	porta_remota = atoi("1339");
-	endereco_remoto.sin_family = AF_INET; /* familia do protocolo*/
-	endereco_remoto.sin_addr.s_addr = inet_addr(rem_hostname); /* endereco IP local */
-	endereco_remoto.sin_port = htons(porta_remota); /* porta local  */
+	servidor = ip[rand()%NUM_IPS];
+	porta_remota = PORTA;
+	endereco_remoto.sin_family = AF_INET;
+	endereco_remoto.sin_addr.s_addr = inet_addr(servidor); 
+	endereco_remoto.sin_port = htons(porta_remota);
 	
 	socket_remoto = socket(AF_INET, SOCK_STREAM, 0);
 	
@@ -155,7 +160,7 @@ int estabelecerConexao(){
 		perror("Erro ao criar stream socket");
 		exit(1);
 	}
-	printf("> Conectando no servidor '%s:%d'\n", rem_hostname, porta_remota);
+	printf("> Conectando no servidor '%s:%d'\n", servidor, porta_remota);
 	
 	if (connect(socket_remoto, (struct sockaddr *) &endereco_remoto, sizeof(endereco_remoto)) < 0) {
 		perror("Erro ao conectar stream socket");
@@ -211,6 +216,8 @@ void verificarPacote(int id){
 				}
 			}
 		}
+		pacotes++;
+		aminoacidos += quantidade;
 		fclose(arquivo);
 	}
 }
@@ -229,4 +236,5 @@ void *executarGerenciador(){
 	printf("Sequência: %s \n", nova_proteina);
 	printf("Progresso: %d/%d \n\n", progresso, TAM_PROTEINA);
 	printf("A SEQUÊNCIA ESTÁ COMPLETA!!!! \n\n");
+	printf("%d aminoácidos de %d pacotes foram recebidos.\n\n", aminoacidos, pacotes);
 }
