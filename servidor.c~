@@ -80,13 +80,13 @@ void conectarComCliente(int socket_original, struct sockaddr_in endereco){
 	size_t tam_solicitacao = sizeof(solicitacao);
 
 	while((read_size = recv(novo_socket, &solicitacao, tam_solicitacao, 0) > 0)){
-		printf("Servidor - Recebi: quantidade - %d; método - %c; payload - %s\n", solicitacao.size, solicitacao.method, solicitacao.payload);
+		printf("Servidor - Recebi: tam - %d; %c; %s\n", solicitacao.size, solicitacao.method, solicitacao.payload);
 	
 		aatp_msg resposta = { 0 };
 		resposta = criarResposta(solicitacao.size);
 	
 		send(novo_socket, &resposta, sizeof(resposta), 0);
-		printf("Servidor - Enviei: quantidade - %d; método - %c; payload - %s\n\n", resposta.size, resposta.method, resposta.payload);
+		printf("Servidor - Enviei: tam - %d; %c; %s\n\n", resposta.size, resposta.method, resposta.payload);
 	}
 	
 	close(novo_socket);

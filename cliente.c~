@@ -166,12 +166,14 @@ int estabelecerConexao(){
 	
 	if (socket_remoto < 0) {
 		//printf("Erro ao criar stream socket");
+		//exit(1);
 		return -1;
 	}else{
 		//printf("> Conectando no servidor '%s:%d'\n", servidor, porta_remota);
-		int conexao = connect(socket_remoto, (struct sockaddr *) &endereco_remoto, sizeof(endereco_remoto));
-		if (conexao < 0) {
+		int a = connect(socket_remoto, (struct sockaddr *) &endereco_remoto, sizeof(endereco_remoto));
+		if (a < 0) {
 			//printf("Erro ao conectar stream socket");
+			//exit(1);
 			return -1;
 		}else{
 			return socket_remoto;
